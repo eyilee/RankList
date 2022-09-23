@@ -281,26 +281,25 @@ private:
             return nullptr;
         }
 
-        TRankNode* pNode = _pNode;
-        while (pNode != nullptr)
+        while (_pNode != nullptr)
         {
-            while (pNode->m_pNext != nullptr)
+            while (_pNode->m_pNext != nullptr)
             {
-                if (_nScore > pNode->m_pNext->GetScore ()) {
+                if (_nScore > _pNode->m_pNext->GetScore ()) {
                     break;
                 }
-                pNode = pNode->m_pNext;
+                _pNode = _pNode->m_pNext;
             }
 
-            if (pNode->m_pDown == nullptr) {
-                return pNode;
+            if (_pNode->m_pDown == nullptr) {
+                return _pNode;
             }
 
-            _kParents.emplace_back (pNode);
-            pNode = pNode->m_pDown;
+            _kParents.emplace_back (_pNode);
+            _pNode = _pNode->m_pDown;
         }
 
-        return pNode;
+        return _pNode;
     }
 
     TRankNode* GetTopNode (TRankNode* _pNode)
@@ -309,12 +308,11 @@ private:
             return nullptr;
         }
 
-        TRankNode* pNode = _pNode;
-        while (pNode->m_pUp != nullptr) {
-            pNode = pNode->m_pUp;
+        while (_pNode->m_pUp != nullptr) {
+            _pNode = _pNode->m_pUp;
         }
 
-        return pNode;
+        return _pNode;
     }
 
     TRankNode* GetBottomNode (TRankNode* _pNode)
@@ -323,12 +321,11 @@ private:
             return nullptr;
         }
 
-        TRankNode* pNode = _pNode;
-        while (pNode->m_pDown != nullptr) {
-            pNode = pNode->m_pDown;
+        while (_pNode->m_pDown != nullptr) {
+            _pNode = _pNode->m_pDown;
         }
 
-        return pNode;
+        return _pNode;
     }
 
     void CreateRoot (TID _nID, TScore _nScore)
@@ -435,16 +432,21 @@ private:
 
         int nCount = 0;
 
-        TRankNode* pNode = _pNode->m_pPrev;
-        while (pNode != nullptr)
+        while (true)
         {
-            nCount += pNode->m_nCount;
-
-            if (pNode->m_pUp != nullptr) {
-                return nCount + CalcRank (pNode->m_pUp);
+            while (_pNode->m_pUp != nullptr) {
+                _pNode = _pNode->m_pUp;
             }
 
-            pNode = pNode->m_pPrev;
+            while (_pNode->m_pUp == nullptr && _pNode->m_pPrev != nullptr)
+            {
+                _pNode = _pNode->m_pPrev;
+                nCount += _pNode->m_nCount;
+            }
+
+            if (_pNode->m_pUp == nullptr) {
+                break;
+            }
         }
 
         return nCount;
@@ -518,6 +520,8 @@ class CMyRankList : public CRankList<int, int, 4>
 int main ()
 {
     {
+        srand (time (nullptr));
+
         auto start = std::chrono::steady_clock::now ();
 
         CMyRankList kRankList;
@@ -527,6 +531,15 @@ int main ()
 
         auto diff = std::chrono::steady_clock::now () - start;
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds> (diff);
+        std::cout << ms.count () / 1000.0 << "s" << std::endl;
+
+        start = std::chrono::steady_clock::now ();
+
+        kRankList.Print ();
+        kRankList.CheckRank ();
+
+        diff = std::chrono::steady_clock::now () - start;
+        ms = std::chrono::duration_cast<std::chrono::milliseconds> (diff);
         std::cout << ms.count () / 1000.0 << "s" << std::endl;
 
         start = std::chrono::steady_clock::now ();
