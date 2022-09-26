@@ -148,22 +148,54 @@ public:
         RemoveNodeMapNode (_nID);
     }
 
+    TRankNode* QueryRank (int _nRank)
+    {
+        int nMaxSize = CalcCount (m_pRoot);
+        if (_nRank < 1 || _nRank > nMaxSize) {
+            return nullptr;
+        }
+
+        int nCount = 0;
+
+        TRankNode* pNode = m_pRoot;
+        while (pNode != nullptr)
+        {
+            while (pNode->m_pNext != nullptr)
+            {
+                if (nCount + pNode->m_nCount >= _nRank) {
+                    break;
+                }
+
+                nCount += pNode->m_nCount;
+                pNode = pNode->m_pNext;
+            }
+
+            if (pNode->m_pDown == nullptr) {
+                return pNode;
+            }
+
+            pNode = pNode->m_pDown;
+        }
+
+        return pNode;
+    }
+
     // DEBUG
     void Print ()
     {
-        TRankNode* pDown = m_pRoot;
-        while (pDown != nullptr) {
-            TRankNode* pNode = pDown;
+        TRankNode* pNode = m_pRoot;
+        while (pNode != nullptr)
+        {
+            TRankNode* pDown = pNode->m_pDown;
+            CheckDown (pDown);
             while (pNode != nullptr)
             {
-                //std::cout << "id:" << pNode->GetID () << ", score: " << pNode->GetScore () << ", level: " << pNode->m_nLevel << std::endl;
-                CheckNext (pNode);
-                pNode = pNode->m_pNext;
+                TRankNode* pNext = pNode->m_pNext;
+                CheckNext (pNext);
+                std::cout << "level: " << pNode->m_nLevel << ", count: " << pNode->m_nCount << ", id:" << pNode->GetID () << ", score: " << pNode->GetScore () << std::endl;
+                pNode = pNext;
             }
-            std::cout << "level: " << pDown->m_nLevel << std::endl;
-            //std::cout << "id:" << pDown->GetID () << ", score: " << pDown->GetScore () << ", level: " << pDown->m_nLevel << std::endl;
-            CheckDown (pDown);
-            pDown = pDown->m_pDown;
+            pNode = pDown;
         }
     }
 
@@ -174,8 +206,8 @@ public:
         }
 
         if (pNode->GetScore () < pNode->m_pNext->GetScore ()) {
-            std::cerr << "[error] id: " << pNode->GetID () << ", score: " << pNode->GetScore () << std::endl;
-            std::cerr << "        id: " << pNode->m_pNext->GetID () << ", score: " << pNode->m_pNext->GetScore () << std::endl;
+            std::cout << "id: " << pNode->GetID () << ", score: " << pNode->GetScore () << std::endl;
+            std::cout << "next id: " << pNode->m_pNext->GetID () << ", score: " << pNode->m_pNext->GetScore () << std::endl;
         }
     }
 
@@ -186,8 +218,8 @@ public:
         }
 
         if (pNode->GetScore () != pNode->m_pDown->GetScore ()) {
-            std::cerr << "[error] id: " << pNode->GetID () << ", score: " << pNode->GetScore () << std::endl;
-            std::cerr << "        id: " << pNode->m_pNext->GetID () << ", score: " << pNode->m_pNext->GetScore () << std::endl;
+            std::cout << "id: " << pNode->GetID () << ", score: " << pNode->GetScore () << std::endl;
+            std::cout << "down id: " << pNode->m_pDown->GetID () << ", score: " << pNode->m_pDown->GetScore () << std::endl;
         }
     }
 
@@ -205,6 +237,11 @@ public:
         int nRank = 0;
         while (pNode != nullptr) {
             nRank++;
+
+            TRankNode* pResult = QueryRank (nRank);
+            if (pNode != pResult) {
+                std::cout << "id: " << pNode->GetID () << "(" << (pResult == nullptr ? 0 : pResult->GetID ()) << ")" << ", rank: " << nRank << std::endl;
+            }
 
             if (nRank != GetRank (pNode->GetID ())) {
                 std::cout << "id: " << pNode->GetID () << ", rank: " << nRank << "(" << GetRank (pNode->GetID ()) << ")" << std::endl;
@@ -555,10 +592,10 @@ int main ()
 {
     srand (static_cast<unsigned int> (time (nullptr)));
 
-    int times = 5;
+    int times = 1;
     while (times--)
     {
-        int size = rand () % 20000 + 10000;
+        int size = rand () % 10000 + 5000;
         std::cout << "size: " << size << std::endl;
 
         auto start = std::chrono::steady_clock::now ();
@@ -585,7 +622,7 @@ int main ()
         start = std::chrono::steady_clock::now ();
 
         //kRankList.Print ();
-        kRankList.CheckRank ();
+        //kRankList.CheckRank ();
 
         diff = std::chrono::steady_clock::now () - start;
         ms = std::chrono::duration_cast<std::chrono::milliseconds> (diff);
@@ -593,7 +630,7 @@ int main ()
 
         start = std::chrono::steady_clock::now ();
 
-        for (int i = 1; i <= size - 1; i++) {
+        for (int i = 1; i <= size - 20; i++) {
             kRankList.RemoveRank (i);
         }
 
@@ -601,8 +638,8 @@ int main ()
         ms = std::chrono::duration_cast<std::chrono::milliseconds> (diff);
         std::cout << "remove: " << ms.count () / 1000.0 << "s" << std::endl;
 
-        kRankList.Print ();
-        kRankList.CheckRank ();
+        //kRankList.Print ();
+        //kRankList.CheckRank ();
     }
 
     return 0;
