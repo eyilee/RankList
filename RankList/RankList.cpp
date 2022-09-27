@@ -171,9 +171,6 @@ public:
     {
         ClearList ();
         ClearPool ();
-
-        m_pRoot = nullptr;
-        m_kNodeMap.clear ();
     }
 
     // DEBUG
@@ -339,7 +336,7 @@ private:
                 _pNode->m_pNext->m_pPrev = _pNode->m_pPrev;
             }
 
-            RecycleNode (_pNode);
+            PushNode (_pNode);
 
             _pNode = pDown;
         }
@@ -351,9 +348,9 @@ private:
             return;
         }
                 
-        m_pRoot = CreateNode (2, 1, _nID, _nScore);
+        m_pRoot = PopNode (2, 1, _nID, _nScore);
 
-        TRankNode* pNewNode = CreateNode (1, 1, _nID, _nScore);
+        TRankNode* pNewNode = PopNode (1, 1, _nID, _nScore);
         pNewNode->m_pUp = m_pRoot;
 
         m_pRoot->m_pDown = pNewNode;
@@ -435,7 +432,7 @@ private:
             return nullptr;
         }
 
-        TRankNode* pNewNode = CreateNode (1, 1, _nID, _nScore);
+        TRankNode* pNewNode = PopNode (1, 1, _nID, _nScore);
         pNewNode->m_pNext = _pNode->m_pNext;
         pNewNode->m_pPrev = _pNode;
 
@@ -459,7 +456,7 @@ private:
             return;
         }
 
-        TRankNode* pNewNode = CreateNode (_pParent->m_nLevel, CalcCount (_pNode), _pNode->GetID (), _pNode->GetScore ());
+        TRankNode* pNewNode = PopNode (_pParent->m_nLevel, CalcCount (_pNode), _pNode->GetID (), _pNode->GetScore ());
         pNewNode->m_pDown = _pNode;
         pNewNode->m_pNext = _pParent->m_pNext;
         pNewNode->m_pPrev = _pParent;
@@ -481,7 +478,7 @@ private:
             return;
         }
 
-        TRankNode* pNewNode = CreateNode (m_pRoot->m_nLevel + 1, CalcCount (m_pRoot), m_pRoot->GetID (), m_pRoot->GetScore ());
+        TRankNode* pNewNode = PopNode (m_pRoot->m_nLevel + 1, CalcCount (m_pRoot), m_pRoot->GetID (), m_pRoot->GetScore ());
         pNewNode->m_pDown = m_pRoot;
 
         m_pRoot->m_pUp = pNewNode;
@@ -575,7 +572,7 @@ private:
         }
     }
 
-    TRankNode* CreateNode (int _nLevel, int _nCount, TID _nID, TScore _nScore)
+    TRankNode* PopNode (int _nLevel, int _nCount, TID _nID, TScore _nScore)
     {
         TRankNode* pNode = nullptr;
         if (!m_kPool.empty ())
@@ -597,7 +594,7 @@ private:
         return pNode;
     }
 
-    void RecycleNode (TRankNode*& _pNode)
+    void PushNode (TRankNode*& _pNode)
     {
         if (_pNode == nullptr) {
             return;
@@ -627,6 +624,9 @@ private:
             }
             pNode = pDown;
         }
+
+        m_pRoot = nullptr;
+        m_kNodeMap.clear ();
     }
 
     void ClearPool ()
