@@ -1,9 +1,7 @@
 ﻿#include <iostream>
 #include <chrono>
-#include <map>
 
 #include <cmath>
-#include <stack>
 #include <unordered_map>
 #include <vector>
 
@@ -57,18 +55,7 @@ public:
 
     virtual ~CRankList ()
     {
-        TRankNode* pNode = m_pRoot;
-        while (pNode != nullptr)
-        {
-            TRankNode* pDown = pNode->m_pDown;
-            while (pNode != nullptr)
-            {
-                TRankNode* pNext = pNode->m_pNext;
-                delete pNode;
-                pNode = pNext;
-            }
-            pNode = pDown;
-        }
+        Clear ();
     }
 
     int GetRank (TID _nID)
@@ -122,7 +109,7 @@ public:
 
                 if (pParent->m_pDown != nullptr)
                 {
-                    if (pParent->m_nCount >= pow (N, pParent->m_nLevel)) {
+                    if (pParent->m_nCount > pow (N, pParent->m_nLevel - 1)) {
                         InsertUp (GetTopNode (pNewNode), pParent);
                     }
                 }
@@ -130,7 +117,7 @@ public:
                 kParents.pop_back ();
             }
 
-            if (CalcCount (m_pRoot) >= pow (N, m_pRoot->m_nLevel)) {
+            if (CalcCount (m_pRoot) > pow (N, m_pRoot->m_nLevel)) {
                 IncreaseLevel ();
             }
         }
@@ -178,6 +165,15 @@ public:
         }
 
         return pNode;
+    }
+
+    void Clear ()
+    {
+        ClearList ();
+        ClearPool ();
+
+        m_pRoot = nullptr;
+        m_kNodeMap.clear ();
     }
 
     // DEBUG
@@ -343,7 +339,7 @@ private:
                 _pNode->m_pNext->m_pPrev = _pNode->m_pPrev;
             }
 
-            delete _pNode;
+            RecycleNode (_pNode);
 
             _pNode = pDown;
         }
@@ -354,15 +350,15 @@ private:
         if (m_pRoot != nullptr) {
             return;
         }
+                
+        m_pRoot = CreateNode (2, 1, _nID, _nScore);
 
-        m_pRoot = new TRankNode (2, 1, _nID, _nScore);
-
-        TRankNode* pNewNode = new TRankNode (1, 1, _nID, _nScore);
+        TRankNode* pNewNode = CreateNode (1, 1, _nID, _nScore);
         pNewNode->m_pUp = m_pRoot;
 
         m_pRoot->m_pDown = pNewNode;
 
-        SetNodeMapNode (_nID, m_pRoot);
+        SetNodeMapNode (m_pRoot);
     }
 
     void InsertRoot (TID _nID, TScore _nScore)
@@ -389,7 +385,7 @@ private:
             pNode = pNode->m_pDown;
         }
 
-        SetNodeMapNode (_nID, m_pRoot);
+        SetNodeMapNode (m_pRoot);
     }
 
     void RemoveRoot ()
@@ -417,7 +413,7 @@ private:
                 pNode = pNode->m_pDown;
             }
 
-            SetNodeMapNode (m_pRoot->GetID (), m_pRoot);
+            SetNodeMapNode (m_pRoot);
 
             RemoveNode (GetTopNode (pNext));
         }
@@ -439,7 +435,7 @@ private:
             return nullptr;
         }
 
-        TRankNode* pNewNode = new TRankNode (1, 1, _nID, _nScore);
+        TRankNode* pNewNode = CreateNode (1, 1, _nID, _nScore);
         pNewNode->m_pNext = _pNode->m_pNext;
         pNewNode->m_pPrev = _pNode;
 
@@ -448,7 +444,7 @@ private:
         }
         _pNode->m_pNext = pNewNode;
 
-        SetNodeMapNode (_nID, pNewNode);
+        SetNodeMapNode (pNewNode);
 
         return pNewNode;
     }
@@ -463,7 +459,7 @@ private:
             return;
         }
 
-        TRankNode* pNewNode = new TRankNode (_pParent->m_nLevel, CalcCount (_pNode), _pNode->GetID (), _pNode->GetScore ());
+        TRankNode* pNewNode = CreateNode (_pParent->m_nLevel, CalcCount (_pNode), _pNode->GetID (), _pNode->GetScore ());
         pNewNode->m_pDown = _pNode;
         pNewNode->m_pNext = _pParent->m_pNext;
         pNewNode->m_pPrev = _pParent;
@@ -476,7 +472,7 @@ private:
 
         _pNode->m_pUp = pNewNode;
 
-        SetNodeMapNode (pNewNode->GetID (), pNewNode);
+        SetNodeMapNode (pNewNode);
     }
 
     void IncreaseLevel ()
@@ -485,13 +481,13 @@ private:
             return;
         }
 
-        TRankNode* pNewNode = new TRankNode (m_pRoot->m_nLevel + 1, CalcCount (m_pRoot), m_pRoot->GetID (), m_pRoot->GetScore ());
+        TRankNode* pNewNode = CreateNode (m_pRoot->m_nLevel + 1, CalcCount (m_pRoot), m_pRoot->GetID (), m_pRoot->GetScore ());
         pNewNode->m_pDown = m_pRoot;
 
         m_pRoot->m_pUp = pNewNode;
         m_pRoot = pNewNode;
 
-        SetNodeMapNode (m_pRoot->GetID (), m_pRoot);
+        SetNodeMapNode (m_pRoot);
     }
 
     int CalcRank (TRankNode* _pNode)
@@ -551,15 +547,17 @@ private:
         return it->second;
     }
 
-    void SetNodeMapNode (TID _nID, TRankNode* _pNode)
+    void SetNodeMapNode (TRankNode* _pNode)
     {
         if (_pNode == nullptr) {
             return;
         }
 
-        auto it = m_kNodeMap.find (_nID);
+        TID nID = _pNode->GetID ();
+
+        auto it = m_kNodeMap.find (nID);
         if (it == m_kNodeMap.end ()) {
-            m_kNodeMap.emplace (_nID, _pNode);
+            m_kNodeMap.emplace (nID, _pNode);
         }
         else {
             it->second = _pNode;
@@ -577,70 +575,176 @@ private:
         }
     }
 
+    TRankNode* CreateNode (int _nLevel, int _nCount, TID _nID, TScore _nScore)
+    {
+        TRankNode* pNode = nullptr;
+        if (!m_kPool.empty ())
+        {
+            pNode = m_kPool.back ();
+
+            pNode->m_nLevel = _nLevel;
+            pNode->m_nCount = _nCount;
+            pNode->SetID (_nID);
+            pNode->SetScore (_nScore);
+
+            m_kPool.pop_back ();
+        }
+
+        if (pNode == nullptr) {
+            pNode = new TRankNode (_nLevel, _nCount, _nID, _nScore);
+        }
+
+        return pNode;
+    }
+
+    void RecycleNode (TRankNode*& _pNode)
+    {
+        if (_pNode == nullptr) {
+            return;
+        }
+
+        _pNode->m_pUp = nullptr;
+        _pNode->m_pDown = nullptr;
+        _pNode->m_pPrev = nullptr;
+        _pNode->m_pNext = nullptr;
+
+        m_kPool.emplace_back (_pNode);
+
+        _pNode = nullptr;
+    }
+
+    void ClearList ()
+    {
+        TRankNode* pNode = m_pRoot;
+        while (pNode != nullptr)
+        {
+            TRankNode* pDown = pNode->m_pDown;
+            while (pNode != nullptr)
+            {
+                TRankNode* pNext = pNode->m_pNext;
+                delete pNode;
+                pNode = pNext;
+            }
+            pNode = pDown;
+        }
+    }
+
+    void ClearPool ()
+    {
+        for (auto& pNode : m_kPool) {
+            if (pNode != nullptr) {
+                delete pNode;
+            }
+        }
+
+        m_kPool.clear ();
+        m_kPool.shrink_to_fit ();
+    }
+
 protected:
     TRankNode* m_pRoot;
     std::unordered_map<TID, TRankNode*> m_kNodeMap;
 
 private:
+    std::vector<TRankNode*> m_kPool;
 };
 
-class CMyRankList : public CRankList<int, int, 4>
+template<int N>
+void test ()
 {
-};
+    int size = 100000; //rand () % 100000 + 50000;
+    std::cout << "size: " << size << ", N: " << N << std::endl;
 
-int main ()
-{
-    srand (static_cast<unsigned int> (time (nullptr)));
+    long long insert = 0;
+    long long update = 0;
+    long long check = 0;
+    long long remove = 0;
+    CRankList<int, int, N> kRankList;
 
-    int times = 1;
+    int T = 5;
+    int times = T;
     while (times--)
     {
-        int size = rand () % 10000 + 5000;
-        std::cout << "size: " << size << std::endl;
+        kRankList.Clear ();
 
         auto start = std::chrono::steady_clock::now ();
 
-        CMyRankList kRankList;
         for (int i = 1; i <= size; i++) {
             kRankList.SetRank (i, rand ());
         }
 
         auto diff = std::chrono::steady_clock::now () - start;
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds> (diff);
-        std::cout << "insert: " << ms.count () / 1000.0 << "s, ";
+        insert += ms.count ();
 
         start = std::chrono::steady_clock::now ();
 
-        for (int i = 1; i <= size; i++) {
-            kRankList.SetRank (i, rand ());
+        for (int i = 0; i < size; i++) {
+            if (rand () % 2 == 0) {
+                kRankList.SetRank (rand () % size, rand ());
+            }
+            else {
+                kRankList.RemoveRank (rand () % size);
+            }
         }
 
         diff = std::chrono::steady_clock::now () - start;
         ms = std::chrono::duration_cast<std::chrono::milliseconds> (diff);
-        std::cout << "update: " << ms.count () / 1000.0 << "s, ";
+        update += ms.count ();
 
         start = std::chrono::steady_clock::now ();
 
         //kRankList.Print ();
-        //kRankList.CheckRank ();
+        kRankList.CheckRank ();
 
         diff = std::chrono::steady_clock::now () - start;
         ms = std::chrono::duration_cast<std::chrono::milliseconds> (diff);
-        std::cout << "check: " << ms.count () / 1000.0 << "s, ";
+        check += ms.count ();
 
         start = std::chrono::steady_clock::now ();
 
-        for (int i = 1; i <= size - 20; i++) {
+        for (int i = 1; i <= size; i++) {
             kRankList.RemoveRank (i);
         }
 
         diff = std::chrono::steady_clock::now () - start;
         ms = std::chrono::duration_cast<std::chrono::milliseconds> (diff);
-        std::cout << "remove: " << ms.count () / 1000.0 << "s" << std::endl;
+        remove += ms.count ();
 
         //kRankList.Print ();
         //kRankList.CheckRank ();
     }
+
+    std::cout << "insert: " << insert / 1000.0 / T << "s, ";
+    std::cout << "update: " << update / 1000.0 / T << "s, ";
+    std::cout << "check: " << check / 1000.0 / T << "s, ";
+    std::cout << "remove: " << remove / 1000.0 / T << "s" << std::endl;
+}
+
+int main ()
+{
+    srand (static_cast<unsigned int> (time (nullptr)));
+
+    test<2> ();
+    test<4> ();
+    test<6> ();
+    test<8> ();
+    test<10> ();
+    test<12> ();
+    test<14> ();
+    test<16> ();
+    test<18> ();
+    test<20> ();
+    test<22> ();
+    test<24> ();
+    test<26> ();
+    test<28> ();
+    test<30> ();
+    test<32> ();
+    test<34> ();
+    test<36> ();
+    test<38> ();
+    test<40> ();
 
     return 0;
 }
