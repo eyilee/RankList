@@ -180,12 +180,27 @@ public:
         while (pNode != nullptr)
         {
             TRankNode* pDown = pNode->m_pDown;
+            while (pNode != nullptr)
+            {
+                TRankNode* pNext = pNode->m_pNext;
+                std::cout << "level: " << pNode->m_nLevel << ", count: " << pNode->m_nCount << ", id:" << pNode->GetID () << ", score: " << pNode->GetScore () << std::endl;
+                pNode = pNext;
+            }
+            pNode = pDown;
+        }
+    }
+
+    void CheckScore ()
+    {
+        TRankNode* pNode = m_pRoot;
+        while (pNode != nullptr)
+        {
+            TRankNode* pDown = pNode->m_pDown;
             CheckDown (pDown);
             while (pNode != nullptr)
             {
                 TRankNode* pNext = pNode->m_pNext;
                 CheckNext (pNext);
-                std::cout << "level: " << pNode->m_nLevel << ", count: " << pNode->m_nCount << ", id:" << pNode->GetID () << ", score: " << pNode->GetScore () << std::endl;
                 pNode = pNext;
             }
             pNode = pDown;
@@ -652,7 +667,7 @@ private:
 template<int N>
 void test ()
 {
-    int size = 100000; //rand () % 100000 + 50000;
+    int size = 80000;
     std::cout << "size: " << size << ", N: " << N << std::endl;
 
     long long insert = 0;
@@ -667,52 +682,53 @@ void test ()
     {
         kRankList.Clear ();
 
-        auto start = std::chrono::steady_clock::now ();
+        {
+            auto start = std::chrono::steady_clock::now ();
 
-        for (int i = 1; i <= size; i++) {
-            kRankList.SetRank (i, rand ());
-        }
-
-        auto diff = std::chrono::steady_clock::now () - start;
-        auto ms = std::chrono::duration_cast<std::chrono::milliseconds> (diff);
-        insert += ms.count ();
-
-        start = std::chrono::steady_clock::now ();
-
-        for (int i = 0; i < size; i++) {
-            if (rand () % 2 == 0) {
-                kRankList.SetRank (rand () % size, rand ());
+            for (int i = 1; i <= size; i++) {
+                kRankList.SetRank (i, rand ());
             }
-            else {
-                kRankList.RemoveRank (rand () % size);
+
+            auto ms = std::chrono::duration_cast<std::chrono::milliseconds> (std::chrono::steady_clock::now () - start);
+            insert += ms.count ();
+        }
+
+        {
+            auto start = std::chrono::steady_clock::now ();
+
+            for (int i = 0; i < size; i++) {
+                if (rand () % 2 == 0) {
+                    kRankList.SetRank (rand () % size, rand ());
+                }
+                else {
+                    kRankList.RemoveRank (rand () % size);
+                }
             }
+
+            auto ms = std::chrono::duration_cast<std::chrono::milliseconds> (std::chrono::steady_clock::now () - start);
+            update += ms.count ();
         }
 
-        diff = std::chrono::steady_clock::now () - start;
-        ms = std::chrono::duration_cast<std::chrono::milliseconds> (diff);
-        update += ms.count ();
+        {
+            auto start = std::chrono::steady_clock::now ();
 
-        start = std::chrono::steady_clock::now ();
+            kRankList.CheckScore ();
+            kRankList.CheckRank ();
 
-        //kRankList.Print ();
-        kRankList.CheckRank ();
-
-        diff = std::chrono::steady_clock::now () - start;
-        ms = std::chrono::duration_cast<std::chrono::milliseconds> (diff);
-        check += ms.count ();
-
-        start = std::chrono::steady_clock::now ();
-
-        for (int i = 1; i <= size; i++) {
-            kRankList.RemoveRank (i);
+            auto ms = std::chrono::duration_cast<std::chrono::milliseconds> (std::chrono::steady_clock::now () - start);
+            check += ms.count ();
         }
 
-        diff = std::chrono::steady_clock::now () - start;
-        ms = std::chrono::duration_cast<std::chrono::milliseconds> (diff);
-        remove += ms.count ();
+        {
+            auto start = std::chrono::steady_clock::now ();
 
-        //kRankList.Print ();
-        //kRankList.CheckRank ();
+            for (int i = 1; i <= size; i++) {
+                kRankList.RemoveRank (i);
+            }
+
+            auto ms = std::chrono::duration_cast<std::chrono::milliseconds> (std::chrono::steady_clock::now () - start);
+            remove += ms.count ();
+        }
     }
 
     std::cout << "insert: " << insert / 1000.0 / T << "s, ";
