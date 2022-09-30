@@ -53,6 +53,8 @@ public:
     {
     }
 
+    CRankList (const CRankList&) = delete;
+
     virtual ~CRankList ()
     {
         Clear ();
@@ -189,11 +191,29 @@ public:
         int nCount = std::min (_nSize, nMaxSize - _nRank);
         _kRankNodes.reserve (nCount);
 
-        TRankNode* pNode = QueryRank (_nRank);
+        TRankNode* pNode = GetBottomNode (QueryRank (_nRank));
         while (pNode != nullptr && nCount > 0) {
             _kRankNodes.emplace_back (pNode);
             pNode = pNode->m_pNext;
             nCount--;
+        }
+    }
+
+    void GetRankList (std::vector<std::pair<TID, TScore>>& _kRankList)
+    {
+        _kRankList.clear ();
+
+        int nCount = CalcCount (m_pRoot);
+        if (nCount < 1) {
+            return;
+        }
+
+        _kRankList.reserve (nCount);
+
+        TRankNode* pNode = GetBottomNode (m_pRoot);
+        while (pNode != nullptr) {
+            _kRankList.emplace_back (pNode->GetID (), pNode->GetScore ());
+            pNode = pNode->m_pNext;
         }
     }
 
