@@ -58,6 +58,16 @@ public:
         Clear ();
     }
 
+    TScore GetScore (TID _nID)
+    {
+        TRankNode* pNodeMapNode = GetNodeMapNode (_nID);
+        if (pNodeMapNode == nullptr) {
+            return 0;
+        }
+
+        return pNodeMapNode->GetScore ();
+    }
+
     int GetRank (TID _nID)
     {
         TRankNode* pNodeMapNode = GetNodeMapNode (_nID);
@@ -165,6 +175,26 @@ public:
         }
 
         return pNode;
+    }
+
+    void QueryRanks (int _nRank, int _nSize, std::vector<TRankNode*>& _kRankNodes)
+    {
+        _kRankNodes.clear ();
+
+        int nMaxSize = CalcCount (m_pRoot);
+        if (_nRank < 1 || _nRank > nMaxSize) {
+            return;
+        }
+
+        int nCount = std::min (_nSize, nMaxSize - _nRank);
+        _kRankNodes.reserve (nCount);
+
+        TRankNode* pNode = QueryRank (_nRank);
+        while (pNode != nullptr && nCount > 0) {
+            _kRankNodes.emplace_back (pNode);
+            pNode = pNode->m_pNext;
+            nCount--;
+        }
     }
 
     void Clear ()
@@ -667,6 +697,8 @@ private:
 template<int N>
 void test ()
 {
+    using TRankList = CRankList<int, int, N>;
+
     int size = 80000;
     std::cout << "size: " << size << ", N: " << N << std::endl;
 
@@ -674,9 +706,9 @@ void test ()
     long long update = 0;
     long long check = 0;
     long long remove = 0;
-    CRankList<int, int, N> kRankList;
+    TRankList kRankList;
 
-    int T = 5;
+    int T = 1;
     int times = T;
     while (times--)
     {
@@ -741,26 +773,26 @@ int main ()
 {
     srand (static_cast<unsigned int> (time (nullptr)));
 
-    test<2> ();
+    //test<2> ();
     test<4> ();
-    test<6> ();
-    test<8> ();
-    test<10> ();
-    test<12> ();
-    test<14> ();
-    test<16> ();
-    test<18> ();
-    test<20> ();
-    test<22> ();
-    test<24> ();
-    test<26> ();
-    test<28> ();
-    test<30> ();
-    test<32> ();
-    test<34> ();
-    test<36> ();
-    test<38> ();
-    test<40> ();
+    //test<6> ();
+    //test<8> ();
+    //test<10> ();
+    //test<12> ();
+    //test<14> ();
+    //test<16> ();
+    //test<18> ();
+    //test<20> ();
+    //test<22> ();
+    //test<24> ();
+    //test<26> ();
+    //test<28> ();
+    //test<30> ();
+    //test<32> ();
+    //test<34> ();
+    //test<36> ();
+    //test<38> ();
+    //test<40> ();
 
     return 0;
 }
