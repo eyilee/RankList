@@ -188,7 +188,7 @@ public:
             return;
         }
 
-        int nCount = std::min (_nSize, nMaxSize - _nRank);
+        int nCount = std::min (_nSize, nMaxSize - _nRank + 1);
         _kRankNodes.reserve (nCount);
 
         TRankNode* pNode = GetBottomNode (QueryRank (_nRank));
@@ -214,6 +214,26 @@ public:
         while (pNode != nullptr) {
             _kRankList.emplace_back (pNode->GetID (), pNode->GetScore ());
             pNode = pNode->m_pNext;
+        }
+    }
+
+    void GetRankList (int _nRank, int _nSize, std::vector<std::pair<TID, TScore>>& _kRankList)
+    {
+        _kRankList.clear ();
+
+        int nMaxSize = CalcCount (m_pRoot);
+        if (_nRank < 1 || _nRank > nMaxSize) {
+            return;
+        }
+
+        int nCount = std::min (_nSize, nMaxSize - _nRank + 1);
+        _kRankList.reserve (nCount);
+
+        TRankNode* pNode = GetBottomNode (QueryRank (_nRank));
+        while (pNode != nullptr && nCount > 0) {
+            _kRankList.emplace_back (pNode->GetID (), pNode->GetScore ());
+            pNode = pNode->m_pNext;
+            nCount--;
         }
     }
 
