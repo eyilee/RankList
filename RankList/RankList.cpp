@@ -41,7 +41,7 @@ public:
     CRankNode* m_pNext;
 };
 
-template<typename TID, typename TScore, int N>
+template<typename TID, typename TScore, int N = 4>
 class CRankList
 {
 public:
@@ -241,6 +241,16 @@ public:
     {
         ClearList ();
         ClearPool ();
+    }
+
+    void Swap (CRankList& _kRankList)
+    {
+        TRankNode* pNode = m_pRoot;
+        m_pRoot = _kRankList.m_pRoot;
+        _kRankList.m_pRoot = pNode;
+
+        m_kNodeMap.swap (_kRankList.m_kNodeMap);
+        m_kPool.swap (_kRankList.m_kPool);
     }
 
     // DEBUG
