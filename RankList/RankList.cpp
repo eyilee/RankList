@@ -88,7 +88,27 @@ public:
         }
 
         if (pNodeMapNode != nullptr) {
-            RemoveRank (_nID);
+            pNodeMapNode = GetBottomNode (pNodeMapNode);
+
+            bool bIsChange = false;
+            if (pNodeMapNode->m_pPrev != nullptr) {
+                bIsChange |= _nScore >= pNodeMapNode->m_pPrev->GetScore ();
+            }
+
+            if (pNodeMapNode->m_pNext != nullptr) {
+                bIsChange |= _nScore < pNodeMapNode->m_pNext->GetScore ();
+            }
+
+            if (bIsChange) {
+                RemoveRank (_nID);
+            }
+            else {
+                while (pNodeMapNode != nullptr) {
+                    pNodeMapNode->SetScore (_nScore);
+                    pNodeMapNode = pNodeMapNode->m_pUp;
+                }
+                return;
+            }
         }
 
         if (m_pRoot == nullptr) {
@@ -100,8 +120,8 @@ public:
         else
         {
             std::vector<TRankNode*> kParents;
-            int size = std::max (m_pRoot->m_nLevel - 1, 0);
-            kParents.reserve (size);
+            int nSize = std::max (m_pRoot->m_nLevel - 1, 0);
+            kParents.reserve (nSize);
 
             TRankNode* pNode = FindNode (_nScore, m_pRoot, kParents);
             if (pNode == nullptr) {
