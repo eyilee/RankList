@@ -386,7 +386,7 @@ private:
         return _pNode;
     }
 
-    TRankNode* FindNode (int _nScore, TRankNode* _pNode, std::vector<TRankNode*>& _kParents)
+    TRankNode* FindNode (TScore _nScore, TRankNode* _pNode, std::vector<TRankNode*>& _kParents)
     {
         if (_pNode == nullptr) {
             return nullptr;
