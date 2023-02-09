@@ -26,7 +26,7 @@ public:
     }
 
     inline void SetID (TID _nID) { m_nID = _nID; }
-    inline void SetScore (int _nScore) { m_nScore = _nScore; }
+    inline void SetScore (TScore _nScore) { m_nScore = _nScore; }
     inline TID GetID () const { return m_nID; }
     inline TScore GetScore () const { return m_nScore; }
 
