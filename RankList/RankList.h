@@ -103,6 +103,7 @@ public:
                     mapNode->m_nScore = _nScore;
                     mapNode = mapNode->m_pkUp;
                 }
+
                 return;
             }
         }
@@ -119,7 +120,7 @@ public:
             int size = std::max (m_pkRoot->m_nLevel - 1, 0);
             parents.reserve (size);
 
-            TRankNode* node = FindPrevNode (_nScore, m_pkRoot, parents);
+            TRankNode* node = FindPrevNode (_nScore, parents);
             if (node == nullptr) {
                 return;
             }
@@ -165,59 +166,6 @@ public:
         RemoveMapNode (_nID);
     }
 
-    TRankNode* QueryRank (int _nRank)
-    {
-        int maxSize = CalcCount (m_pkRoot);
-        if (_nRank < 1 || _nRank > maxSize) {
-            return nullptr;
-        }
-
-        int count = 0;
-
-        TRankNode* node = m_pkRoot;
-        while (node != nullptr)
-        {
-            while (node->m_pkNext != nullptr)
-            {
-                if (count + node->m_nCount >= _nRank) {
-                    break;
-                }
-
-                count += node->m_nCount;
-                node = node->m_pkNext;
-            }
-
-            if (node->m_pkDown == nullptr) {
-                return node;
-            }
-
-            node = node->m_pkDown;
-        }
-
-        return node;
-    }
-
-    void QueryRanks (int _nRank, int _nSize, std::vector<TRankNode*>& _rkRankNodes)
-    {
-        _rkRankNodes.clear ();
-
-        int maxSize = CalcCount (m_pkRoot);
-        if (_nRank < 1 || _nRank > maxSize) {
-            return;
-        }
-
-        int count = std::min (_nSize, maxSize - _nRank + 1);
-        _rkRankNodes.reserve (count);
-
-        TRankNode* node = GetBottomNode (QueryRank (_nRank));
-        while (node != nullptr && count > 0)
-        {
-            _rkRankNodes.emplace_back (node);
-            node = node->m_pkNext;
-            count--;
-        }
-    }
-
     void GetRankList (std::vector<std::pair<TID, TScore>>& _rkRankList)
     {
         _rkRankList.clear ();
@@ -249,7 +197,12 @@ public:
         int count = std::min (_nSize, maxSize - _nRank + 1);
         _rkRankList.reserve (count);
 
-        TRankNode* node = GetBottomNode (QueryRank (_nRank));
+        TRankNode* result = QueryRank (_nRank);
+        if (result == nullptr) {
+            return;
+        }
+
+        TRankNode* node = GetBottomNode (result);
         while (node != nullptr && count > 0)
         {
             _rkRankList.emplace_back (node->m_nID, node->m_nScore);
@@ -285,6 +238,7 @@ public:
                 std::cout << "level: " << node->m_nLevel << ", count: " << node->m_nCount << ", id:" << node->m_nID << ", score: " << node->m_nScore << std::endl;
                 node = next;
             }
+
             node = down;
         }
     }
@@ -295,40 +249,25 @@ public:
         while (node != nullptr)
         {
             TRankNode* down = node->m_pkDown;
-            CheckDown (down);
+            if (down->m_nScore != down->m_pkDown->m_nScore)
+            {
+                std::cout << "node id: " << down->m_nID << ", score: " << down->m_nScore << std::endl;
+                std::cout << "down id: " << down->m_pkDown->m_nID << ", score: " << down->m_pkDown->m_nScore << std::endl;
+            }
+
             while (node != nullptr)
             {
                 TRankNode* next = node->m_pkNext;
-                CheckNext (next);
+                if (next->m_nScore < next->m_pkNext->m_nScore)
+                {
+                    std::cout << "node id: " << next->m_nID << ", score: " << next->m_nScore << std::endl;
+                    std::cout << "next id: " << next->m_pkNext->m_nID << ", score: " << next->m_pkNext->m_nScore << std::endl;
+                }
+
                 node = next;
             }
+
             node = down;
-        }
-    }
-
-    void CheckNext (TRankNode* _pkNode)
-    {
-        if (_pkNode == nullptr || _pkNode->m_pkNext == nullptr) {
-            return;
-        }
-
-        if (_pkNode->m_nScore < _pkNode->m_pkNext->m_nScore)
-        {
-            std::cout << "node id: " << _pkNode->m_nID << ", score: " << _pkNode->m_nScore << std::endl;
-            std::cout << "next id: " << _pkNode->m_pkNext->m_nID << ", score: " << _pkNode->m_pkNext->m_nScore << std::endl;
-        }
-    }
-
-    void CheckDown (TRankNode* _pkNode)
-    {
-        if (_pkNode == nullptr || _pkNode->m_pkDown == nullptr) {
-            return;
-        }
-
-        if (_pkNode->m_nScore != _pkNode->m_pkDown->m_nScore)
-        {
-            std::cout << "node id: " << _pkNode->m_nID << ", score: " << _pkNode->m_nScore << std::endl;
-            std::cout << "down id: " << _pkNode->m_pkDown->m_nID << ", score: " << _pkNode->m_pkDown->m_nScore << std::endl;
         }
     }
 
@@ -349,12 +288,18 @@ public:
             rank++;
 
             TRankNode* result = QueryRank (rank);
-            if (node != result) {
-                std::cout << "id: " << node->m_nID << "(" << (result == nullptr ? 0 : result->m_nID) << ")" << ", rank: " << rank << std::endl;
+            if (result == nullptr) {
+                std::cout << "rank: " << rank << ", result: nullptr" << std::endl;
+            }
+            else {
+                if (node->m_nID != result->m_nID) {
+                    std::cout << "rank: " << rank << ", node: " << node->m_nID << ", result: " << result->m_nID << std::endl;
+                }
             }
 
-            if (rank != GetRank (node->m_nID)) {
-                std::cout << "id: " << node->m_nID << ", rank: " << rank << "(" << GetRank (node->m_nID) << ")" << std::endl;
+            int getRank = GetRank (node->m_nID);
+            if (rank != getRank) {
+                std::cout << "rank: " << rank << ", node: " << node->m_nID << ", getRank: " << getRank << std::endl;
             }
 
             node = node->m_pkNext;
@@ -369,66 +314,63 @@ public:
 private:
     TRankNode* GetTopNode (TRankNode* _pkNode)
     {
-        if (_pkNode == nullptr) {
-            return nullptr;
+        TRankNode* node = _pkNode;
+        if (node != nullptr)
+        {
+            while (node->m_pkUp != nullptr) {
+                node = node->m_pkUp;
+            }
         }
 
-        while (_pkNode->m_pkUp != nullptr) {
-            _pkNode = _pkNode->m_pkUp;
-        }
-
-        return _pkNode;
+        return node;
     }
 
     TRankNode* GetBottomNode (TRankNode* _pkNode)
     {
-        if (_pkNode == nullptr) {
-            return nullptr;
+        TRankNode* node = _pkNode;
+        if (node != nullptr)
+        {
+            while (node->m_pkDown != nullptr) {
+                node = node->m_pkDown;
+            }
         }
 
-        while (_pkNode->m_pkDown != nullptr) {
-            _pkNode = _pkNode->m_pkDown;
-        }
-
-        return _pkNode;
+        return node;
     }
 
-    TRankNode* FindPrevNode (TScore _nScore, TRankNode* _pkNode, std::vector<TRankNode*>& _rkParents)
+    TRankNode* FindPrevNode (TScore _nScore, std::vector<TRankNode*>& _rkParents)
     {
-        if (_pkNode == nullptr) {
-            return nullptr;
-        }
-
-        while (_pkNode != nullptr)
+        TRankNode* node = m_pkRoot;
+        while (node != nullptr)
         {
-            while (_pkNode->m_pkNext != nullptr)
+            while (node->m_pkNext != nullptr)
             {
-                if (_nScore > _pkNode->m_pkNext->m_nScore) {
+                if (node->m_pkNext->m_nScore < _nScore) {
                     break;
                 }
 
-                _pkNode = _pkNode->m_pkNext;
+                node = node->m_pkNext;
             }
 
-            if (_pkNode->m_pkDown == nullptr) {
-                return _pkNode;
+            if (node->m_pkDown == nullptr) {
+                return node;
             }
 
-            _rkParents.emplace_back (_pkNode);
-            _pkNode = _pkNode->m_pkDown;
+            _rkParents.emplace_back (node);
+            node = node->m_pkDown;
         }
 
-        return _pkNode;
+        return node;
     }
 
     void RemoveNode (TRankNode* _pkNode)
     {
-        _pkNode = GetTopNode (_pkNode);
-        if (_pkNode == nullptr) {
+        TRankNode* top = GetTopNode (_pkNode);
+        if (top == nullptr) {
             return;
         }
 
-        TRankNode* parent = _pkNode;
+        TRankNode* parent = top;
         while (parent != nullptr)
         {
             while (parent->m_pkUp != nullptr)
@@ -440,28 +382,27 @@ private:
             parent = parent->m_pkPrev;
         }
 
-        while (_pkNode != nullptr)
+        TRankNode* node = top;
+        while (node != nullptr)
         {
-            TRankNode* down = _pkNode->m_pkDown;
-
-            if (_pkNode->m_nLevel > 1)
+            if (node->m_nLevel > 1)
             {
-                if (_pkNode->m_pkPrev != nullptr) {
-                    _pkNode->m_pkPrev->m_nCount += _pkNode->m_nCount - 1;
+                if (node->m_pkPrev != nullptr) {
+                    node->m_pkPrev->m_nCount += node->m_nCount - 1;
                 }
             }
 
-            if (_pkNode->m_pkPrev != nullptr) {
-                _pkNode->m_pkPrev->m_pkNext = _pkNode->m_pkNext;
+            if (node->m_pkPrev != nullptr) {
+                node->m_pkPrev->m_pkNext = node->m_pkNext;
             }
 
-            if (_pkNode->m_pkNext != nullptr) {
-                _pkNode->m_pkNext->m_pkPrev = _pkNode->m_pkPrev;
+            if (node->m_pkNext != nullptr) {
+                node->m_pkNext->m_pkPrev = node->m_pkPrev;
             }
 
-            PushNode (_pkNode);
-
-            _pkNode = down;
+            TRankNode* down = node->m_pkDown;
+            PushNode (node);
+            node = down;
         }
     }
 
@@ -660,12 +601,71 @@ private:
         return count;
     }
 
+    TRankNode* QueryRank (int _nRank)
+    {
+        int maxSize = CalcCount (m_pkRoot);
+        if (_nRank < 1 || _nRank > maxSize) {
+            return nullptr;
+        }
+
+        int count = 0;
+
+        TRankNode* node = m_pkRoot;
+        while (node != nullptr)
+        {
+            while (node->m_pkNext != nullptr)
+            {
+                if (count + node->m_nCount >= _nRank) {
+                    break;
+                }
+
+                count += node->m_nCount;
+                node = node->m_pkNext;
+            }
+
+            if (node->m_pkDown == nullptr) {
+                return node;
+            }
+
+            node = node->m_pkDown;
+        }
+
+        return node;
+    }
+
+    void QueryRanks (int _nRank, int _nSize, std::vector<TRankNode*>& _rkRankNodes)
+    {
+        _rkRankNodes.clear ();
+
+        int maxSize = CalcCount (m_pkRoot);
+        if (_nRank < 1 || _nRank > maxSize) {
+            return;
+        }
+
+        int count = std::min (_nSize, maxSize - _nRank + 1);
+        _rkRankNodes.reserve (count);
+
+        TRankNode* result = QueryRank (_nRank);
+        if (result == nullptr) {
+            return;
+        }
+
+        TRankNode* node = GetBottomNode (result);
+        while (node != nullptr && count > 0)
+        {
+            _rkRankNodes.emplace_back (node);
+            node = node->m_pkNext;
+            count--;
+        }
+    }
+
     TRankNode* GetMapNode (TID _nID)
     {
         auto it = m_kNodeMap.find (_nID);
         if (it == m_kNodeMap.end ()) {
             return nullptr;
         }
+
         return it->second;
     }
 
@@ -699,10 +699,9 @@ private:
 
     TRankNode* PopNode (int _nLevel, int _nCount, TID _nID, TScore _nScore)
     {
-        TRankNode* node = nullptr;
         if (!m_kPool.empty ())
         {
-            node = m_kPool.back ();
+            TRankNode* node = m_kPool.back ();
 
             node->m_nLevel = _nLevel;
             node->m_nCount = _nCount;
@@ -710,29 +709,26 @@ private:
             node->m_nScore = _nScore;
 
             m_kPool.pop_back ();
-        }
 
-        if (node == nullptr) {
-            node = new TRankNode (_nLevel, _nCount, _nID, _nScore);
+            return node;
         }
-
-        return node;
+        else {
+            return new TRankNode (_nLevel, _nCount, _nID, _nScore);
+        }
     }
 
-    void PushNode (TRankNode*& _rpkNode)
+    void PushNode (TRankNode* _pkNode)
     {
-        if (_rpkNode == nullptr) {
+        if (_pkNode == nullptr) {
             return;
         }
 
-        _rpkNode->m_pkUp = nullptr;
-        _rpkNode->m_pkDown = nullptr;
-        _rpkNode->m_pkPrev = nullptr;
-        _rpkNode->m_pkNext = nullptr;
+        _pkNode->m_pkUp = nullptr;
+        _pkNode->m_pkDown = nullptr;
+        _pkNode->m_pkPrev = nullptr;
+        _pkNode->m_pkNext = nullptr;
 
-        m_kPool.emplace_back (_rpkNode);
-
-        _rpkNode = nullptr;
+        m_kPool.emplace_back (_pkNode);
     }
 
     void ClearList ()

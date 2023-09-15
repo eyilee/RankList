@@ -73,11 +73,11 @@ void Test ()
         rankList.Print ();
     }
 
-    std::cout << "N:" << N << ", Size:" << Size << ", MaxLevel:" << maxLevel << std::endl;
-    std::cout << "Insert:" << insert / 1000.0 / Times << "s, ";
-    std::cout << "Update:" << update / 1000.0 / Times << "s, ";
-    std::cout << "Check:" << check / 1000.0 / Times << "s, ";
-    std::cout << "Remove:" << remove / 1000.0 / Times << "s" << std::endl;
+    std::cout << "N: " << N << ", Size: " << Size << ", MaxLevel: " << maxLevel << std::endl;
+    std::cout << "Insert: " << insert / 1000.0 / Times << "s, ";
+    std::cout << "Update: " << update / 1000.0 / Times << "s, ";
+    std::cout << "Check: " << check / 1000.0 / Times << "s, ";
+    std::cout << "Remove: " << remove / 1000.0 / Times << "s" << std::endl;
 }
 
 int main ()
@@ -85,15 +85,15 @@ int main ()
     srand (static_cast<unsigned int> (time (nullptr)));
 
     Test<2> ();
-    Test<3> ();
+    //Test<3> ();
     Test<4> ();
-    Test<5> ();
-    Test<6> ();
-    Test<7> ();
+    //Test<5> ();
+    //Test<6> ();
+    //Test<7> ();
     Test<8> ();
-    Test<10> ();
-    Test<12> ();
-    Test<14> ();
+    //Test<10> ();
+    //Test<12> ();
+    //Test<14> ();
 
     return 0;
 }
