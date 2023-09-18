@@ -249,19 +249,25 @@ public:
         while (node != nullptr)
         {
             TRankNode* down = node->m_pkDown;
-            if (down->m_nScore != down->m_pkDown->m_nScore)
+            if (down != nullptr && down->m_pkDown != nullptr)
             {
-                std::cout << "node id: " << down->m_nID << ", score: " << down->m_nScore << std::endl;
-                std::cout << "down id: " << down->m_pkDown->m_nID << ", score: " << down->m_pkDown->m_nScore << std::endl;
+                if (down->m_nScore != down->m_pkDown->m_nScore)
+                {
+                    std::cout << "node id: " << down->m_nID << ", score: " << down->m_nScore << std::endl;
+                    std::cout << "down id: " << down->m_pkDown->m_nID << ", score: " << down->m_pkDown->m_nScore << std::endl;
+                }
             }
 
             while (node != nullptr)
             {
                 TRankNode* next = node->m_pkNext;
-                if (next->m_nScore < next->m_pkNext->m_nScore)
+                if (next != nullptr && next->m_pkNext != nullptr)
                 {
-                    std::cout << "node id: " << next->m_nID << ", score: " << next->m_nScore << std::endl;
-                    std::cout << "next id: " << next->m_pkNext->m_nID << ", score: " << next->m_pkNext->m_nScore << std::endl;
+                    if (next->m_nScore < next->m_pkNext->m_nScore)
+                    {
+                        std::cout << "node id: " << next->m_nID << ", score: " << next->m_nScore << std::endl;
+                        std::cout << "next id: " << next->m_pkNext->m_nID << ", score: " << next->m_pkNext->m_nScore << std::endl;
+                    }
                 }
 
                 node = next;

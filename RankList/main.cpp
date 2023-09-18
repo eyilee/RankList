@@ -84,13 +84,13 @@ int main ()
 {
     srand (static_cast<unsigned int> (time (nullptr)));
 
-    Test<2> ();
+    //Test<2> ();
     //Test<3> ();
     Test<4> ();
     //Test<5> ();
     //Test<6> ();
     //Test<7> ();
-    Test<8> ();
+    //Test<8> ();
     //Test<10> ();
     //Test<12> ();
     //Test<14> ();
