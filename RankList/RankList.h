@@ -675,20 +675,20 @@ private:
         return it->second;
     }
 
-    void SetMapNode (TRankNode* _pNode)
+    void SetMapNode (TRankNode* _pkNode)
     {
-        if (_pNode == nullptr) {
+        if (_pkNode == nullptr) {
             return;
         }
 
-        TID id = _pNode->m_nID;
+        TID id = _pkNode->m_nID;
 
         auto it = m_kNodeMap.find (id);
         if (it == m_kNodeMap.end ()) {
-            m_kNodeMap.emplace (id, _pNode);
+            m_kNodeMap.emplace (id, _pkNode);
         }
         else {
-            it->second = _pNode;
+            it->second = _pkNode;
         }
     }
 
